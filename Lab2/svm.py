@@ -1,15 +1,16 @@
 import numpy, random, math
 from scipy.optimize import minimize
 import matplotlib.pyplot as plt
+import datetime as t
 numpy.random.seed(100)
 
 P  = 0
 
 classA = numpy.concatenate(
-    (numpy.random.randn(10, 2) * 0.8 + [1.5, 0.5],
-    numpy.random.randn(10, 2) * 0.8 + [-1.5, 0.5]))
+    (numpy.random.randn(15, 2) * 0.2 + [2.5, 0.0],
+    numpy.random.randn(15, 2) * 0.2 + [-3.5, 0.0]))
 
-classB = numpy.random.randn(20, 2) * 0.8 + [0.0, -0.5]
+classB = numpy.random.randn(30, 2) * 0.2 + [0.5, 0.0]
 
 inputs = numpy.concatenate((classA, classB))
 targets = numpy.concatenate(
@@ -31,11 +32,11 @@ def lin_kernel(x,y):
     return numpy.dot(x,y)
 
 def poly_kernel(x, y):
-    p = 3
+    p = 7
     return (numpy.dot(x,y) + 1)**p
 
 def rbf_kernel(x, y):
-    constant = 0.5
+    constant = 1.5
     sigma = 2*(constant**2)
     magnitude = (x[0] - y[0])**2 + (x[1]-y[1])**2
     result = math.pow(math.e, -(magnitude/sigma))
@@ -64,6 +65,7 @@ def zerofun(a):
     sum = 0
     for i in range(N):
         sum = sum + a[i]*targets[i]
+    #print(sum)
     return sum
 
 def extractNonZero(a):
@@ -116,38 +118,26 @@ def doPlot():
  
     plt.contour(xgrid, ygrid, grid, (-1.0, 0.0, 1.0), colors=('red', 'black', 'blue'), linewidths=(1,3,1))
 
-    plt.savefig('printyboi.pdf')
+    plt.savefig('p15.png')
     plt.show()
 
-#print(lin_kernel(t1,t2))
-#print(start)
-#dataset = generateDataSet()
-#print(dataset)
-#T = generateTSet()
-#print(generateTSet())
+
 P = generateP(targets, inputs)
-#print(P)
-#print(objective(start))
 
-C = 5
+C = None
 B = [(0, C) for a in range(N)]
-#print(zerofun(start))
+
+startTime = t.datetime.now()
+
 ret = minimize(objective,start,bounds=B,constraints={'type':'eq', 'fun':zerofun})
+
+stopTime = t.datetime.now()
+
+
 alpha = ret['x']
-print(ret['success'])
+
+print(ret)
+print("Time (for minimize func.): " + str(stopTime-startTime))
 non_zero_alpha = extractNonZero(alpha)
-#print(ind(non_zero_alpha))
+
 doPlot()
-
-#print(non_zero_alpha)
-#print(bias(non_zero_alpha))
-
-"""
-constraint={'type':'eq', 'fun':zerofun}
-C = 10
-B = [(0, C) for a in range(N)]
-
-ret = minimize(objective,start,bounds=B,constraints={'type':'eq', 'fun':zerofun})
-alpha = ret['x']
-print(alpha)
-"""

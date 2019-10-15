@@ -55,6 +55,11 @@ def computePrior(labels, W=None):
 # out:    mu - C x d matrix of class means (mu[i] - class i mean)
 #      sigma - C x d x d matrix of class covariances (sigma[i] - class i sigma)
 def mlParams(X, labels, W=None):
+    # ------ our code ------
+    d = np.shape(X)[1]
+    N = len(labels)
+    k = len(np.unique(labels))
+    # ---------------------
     assert(X.shape[0]==labels.shape[0])
     Npts,Ndims = np.shape(X)
     classes = np.unique(labels)
@@ -65,6 +70,30 @@ def mlParams(X, labels, W=None):
 
     mu = np.zeros((Nclasses,Ndims))
     sigma = np.zeros((Nclasses,Ndims,Ndims))
+    # ----------- our code starts here -------------
+    mu_counter = np.array([0]*k)
+    i = 0
+    for el in X:
+        for index in range(d):
+            mu[labels[i]][index] += el[index]
+        mu_counter[labels[i]] += 1
+        i+=1
+    j=0
+    for mean in mu:
+        mu[j] = mean/mu_counter[j]
+        j+=1
+
+    for id_k in range(k):
+        sum = 0
+        for i in range(np.shape(X)[0]):
+            if labels[i] == id_k:
+                for j in range(d):
+                    sum += (X[i][j] - mu[id_k][j]) ** 2
+        sigma[id_k] = (1/mu_counter[id_k]) * sum
+
+    #print(mu)
+    print(sigma)
+    #print(mu_counter)
 
     # TODO: fill in the code to compute mu and sigma!
     # ==========================
@@ -121,7 +150,7 @@ class BayesClassifier(object):
 
 X, labels = genBlobs(centers=5)
 mu, sigma = mlParams(X,labels)
-plotGaussian(X,labels,mu,sigma)
+#plotGaussian(X,labels,mu,sigma)
 
 
 # Call the `testClassifier` and `plotBoundary` functions for this part.

@@ -41,14 +41,21 @@ def computePrior(labels, W=None):
     Nclasses = np.size(classes)
 
     prior = np.zeros((Nclasses,1))
-
+    counter = np.zeros((Nclasses,1))
+    N = len(labels)
+    total = 0
     # TODO: compute the values of prior for each class!
     # ==========================
-    
+    for c in labels:
+        total += 1
+        counter[c] += 1
+    i = 0
+    for count in counter:
+        prior[i] =count/total
+        i+=1
+    #print(prior)
     # ==========================
-
     return prior
-
 # NOTE: you do not need to handle the W argument for this part!
 # in:      X - N x d matrix of N data points
 #     labels - N vector of class labels
@@ -74,7 +81,7 @@ def mlParams(X, labels, W=None):
     mu_counter = np.array([0]*k)
     i = 0
     for el in X:
-        for index in range(d):
+        for index in range(Ndims):
             mu[labels[i]][index] += el[index]
         mu_counter[labels[i]] += 1
         i+=1
@@ -82,25 +89,36 @@ def mlParams(X, labels, W=None):
     for mean in mu:
         mu[j] = mean/mu_counter[j]
         j+=1
+    
+    i = 0
+    sigma_matrix = np.zeros((k,Ndims))
+    for el in X:
+        for index in range(Ndims):
+            sigma_matrix[labels[i]][index] += (X[i][index] - mu[labels[i]][index]) ** 2
+            #print(str(labels[i]) + " - " + str(sigma_matrix[labels[i]][index]))
+        i+=1
 
-    for id_k in range(k):
-        sum = 0
-        for i in range(np.shape(X)[0]):
-            if labels[i] == id_k:
-                for j in range(d):
-                    sum += (X[i][j] - mu[id_k][j]) ** 2
-        sigma[id_k] = (1/mu_counter[id_k]) * sum
+        
+    for v in range(k):
+        temp_v = sigma_matrix[v] / mu_counter[v]
+        sigma[v] = np.diag(temp_v)
+        
+
 
     #print(mu)
-    print(sigma)
+    #print(sigma)
     #print(mu_counter)
 
-    # TODO: fill in the code to compute mu and sigma!
-    # ==========================
-    
-    # ==========================
-
     return mu, sigma
+
+def inverse(sigma):
+    new_sig = np.diag(sigma)
+    """for sig in sigma:
+        print(sig)
+        new_sig[i] = (1.0/sig)
+        i+=1"""
+    new_sig = 1/new_sig
+    return np.diag(new_sig)
 
 # in:      X - N x d matrix of M data points
 #      prior - C x 1 matrix of class priors
@@ -108,14 +126,24 @@ def mlParams(X, labels, W=None):
 #      sigma - C x d x d matrix of class covariances (sigma[i] - class i sigma)
 # out:     h - N vector of class predictions for test points
 def classifyBayes(X, prior, mu, sigma):
-
+    k = len(prior)
     Npts = X.shape[0]
     Nclasses,Ndims = np.shape(mu)
     logProb = np.zeros((Nclasses, Npts))
 
+    inverse_matrix = np.zeros((Nclasses, Ndims, Ndims))
+    for c in range(Nclasses):
+        inverse_matrix[c] = inverse(sigma[c])
+
     # TODO: fill in the code to compute the log posterior logProb!
     # ==========================
-    
+    i=0
+    for x in X:
+        for m in range(Nclasses):
+            logProb[m][i] = np.log(prior[m])-(1/2)*np.log(np.linalg.det(sigma[m]))
+            comp = (1/2)*np.matmul(np.matmul((x - mu[m]), inverse_matrix[m]), np.transpose(x-mu[m]))
+            logProb[m][i] = logProb[m][i] - comp
+        i+=1
     # ==========================
     
     # one possible way of finding max a-posteriori once
@@ -151,6 +179,8 @@ class BayesClassifier(object):
 X, labels = genBlobs(centers=5)
 mu, sigma = mlParams(X,labels)
 #plotGaussian(X,labels,mu,sigma)
+prior = computePrior(labels)
+classifyBayes(X, prior, mu, sigma)
 
 
 # Call the `testClassifier` and `plotBoundary` functions for this part.
@@ -160,11 +190,11 @@ mu, sigma = mlParams(X,labels)
 
 
 
-#testClassifier(BayesClassifier(), dataset='vowel', split=0.7)
+testClassifier(BayesClassifier(), dataset='vowel', split=0.7)
 
 
 
-#plotBoundary(BayesClassifier(), dataset='iris',split=0.7)
+plotBoundary(BayesClassifier(), dataset='vowel',split=0.7)
 
 
 # ## Boosting functions to implement

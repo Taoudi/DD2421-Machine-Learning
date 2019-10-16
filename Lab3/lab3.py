@@ -31,7 +31,7 @@ import random
 # NOTE: you do not need to handle the W argument for this part!
 # in: labels - N vector of class labels
 # out: prior - C x 1 vector of class priors
-def computePrior(labels, W=None):
+def computePrior(labels, W):
     Npts = labels.shape[0]
     if W is None:
         W = np.ones((Npts,1))/Npts
@@ -46,9 +46,11 @@ def computePrior(labels, W=None):
     total = 0
     # TODO: compute the values of prior for each class!
     # ==========================
+    i = 0
     for c in labels:
-        total += 1
-        counter[c] += 1
+        total += W[i]
+        counter[c] += W[i]
+        i+=1
     i = 0
     for count in counter:
         prior[i] =count/total
@@ -61,7 +63,7 @@ def computePrior(labels, W=None):
 #     labels - N vector of class labels
 # out:    mu - C x d matrix of class means (mu[i] - class i mean)
 #      sigma - C x d x d matrix of class covariances (sigma[i] - class i sigma)
-def mlParams(X, labels, W=None):
+def mlParams(X, labels, W):
     # ------ our code ------
     d = np.shape(X)[1]
     N = len(labels)
@@ -78,23 +80,24 @@ def mlParams(X, labels, W=None):
     mu = np.zeros((Nclasses,Ndims))
     sigma = np.zeros((Nclasses,Ndims,Ndims))
     # ----------- our code starts here -------------
-    mu_counter = np.array([0]*k)
+    mu_counter = np.array([0.]*k)
     i = 0
     for el in X:
         for index in range(Ndims):
-            mu[labels[i]][index] += el[index]
-        mu_counter[labels[i]] += 1
+            mu[labels[i]][index] += el[index]*W[i]
+        mu_counter[labels[i]] += W[i]
         i+=1
     j=0
+    print(mu_counter)
     for mean in mu:
-        mu[j] = mean/mu_counter[j]
+        mu[j] = mean/(mu_counter[j])
         j+=1
     
     i = 0
     sigma_matrix = np.zeros((k,Ndims))
     for el in X:
         for index in range(Ndims):
-            sigma_matrix[labels[i]][index] += (X[i][index] - mu[labels[i]][index]) ** 2
+            sigma_matrix[labels[i]][index] += W[i]*((X[i][index] - mu[labels[i]][index]) ** 2)
             #print(str(labels[i]) + " - " + str(sigma_matrix[labels[i]][index]))
         i+=1
 
@@ -175,11 +178,12 @@ class BayesClassifier(object):
 # 
 # Call `genBlobs` and `plotGaussian` to verify your estimates.
 
-
 X, labels = genBlobs(centers=5)
-mu, sigma = mlParams(X,labels)
-#plotGaussian(X,labels,mu,sigma)
-prior = computePrior(labels)
+W = np.ones(len(labels))/len(labels)
+#print(W)
+mu, sigma = mlParams(X,labels,W)
+plotGaussian(X,labels,mu,sigma)
+prior = computePrior(labels,W)
 classifyBayes(X, prior, mu, sigma)
 
 
@@ -190,11 +194,11 @@ classifyBayes(X, prior, mu, sigma)
 
 
 
-testClassifier(BayesClassifier(), dataset='vowel', split=0.7)
+#testClassifier(BayesClassifier(), dataset='vowel', split=0.7)
 
 
 
-plotBoundary(BayesClassifier(), dataset='vowel',split=0.7)
+#plotBoundary(BayesClassifier(), dataset='iris',split=0.7)
 
 
 # ## Boosting functions to implement
@@ -224,11 +228,20 @@ def trainBoost(base_classifier, X, labels, T=10):
 
         # do classification for each point
         vote = classifiers[-1].classify(X)
+        #print(vote)
 
         # TODO: Fill in the rest, construct the alphas etc.
         # ==========================
-        
-        # alphas.append(alpha) # you will need to append the new alpha
+
+        delta = np.reshape((vote == labels), (Npts,1))
+        err = np.sum(wCur * (1 - delta)) + 1e-20
+        alpha = 1/2 * (np.log(1-err) - np.log(err))
+        alphaSign = (delta-.5)/(-.5)
+        wCur = wCur * (np.exp(alphaSign*alpha))
+        Z = np.sum(wCur)
+        wCur = wCur/Z
+
+        alphas.append(alpha) # you will need to append the new alpha
         # ==========================
         
     return classifiers, alphas

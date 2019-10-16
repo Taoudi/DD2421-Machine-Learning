@@ -88,7 +88,7 @@ def mlParams(X, labels, W):
         mu_counter[labels[i]] += W[i]
         i+=1
     j=0
-    print(mu_counter)
+    #print(mu_counter)
     for mean in mu:
         mu[j] = mean/(mu_counter[j])
         j+=1
@@ -178,19 +178,19 @@ class BayesClassifier(object):
 # 
 # Call `genBlobs` and `plotGaussian` to verify your estimates.
 
-X, labels = genBlobs(centers=5)
-W = np.ones(len(labels))/len(labels)
+#X, labels = genBlobs(centers=5)
+#W = np.ones(len(labels))/len(labels)
 #print(W)
-mu, sigma = mlParams(X,labels,W)
-plotGaussian(X,labels,mu,sigma)
-prior = computePrior(labels,W)
-classifyBayes(X, prior, mu, sigma)
+#mu, sigma = mlParams(X,labels,W)
+#plotGaussian(X,labels,mu,sigma)
+#prior = computePrior(labels,W)
+#classifyBayes(X, prior, mu, sigma)
 
 
 # Call the `testClassifier` and `plotBoundary` functions for this part.
 
 
-#testClassifier(BayesClassifier(), dataset='iris', split=0.7)
+#testClassifier(BayesClassifier(), dataset='vowel', split=0.7)
 
 
 
@@ -198,7 +198,7 @@ classifyBayes(X, prior, mu, sigma)
 
 
 
-#plotBoundary(BayesClassifier(), dataset='iris',split=0.7)
+#plotBoundary(BayesClassifier(), dataset='vowel',split=0.7)
 
 
 # ## Boosting functions to implement
@@ -234,7 +234,7 @@ def trainBoost(base_classifier, X, labels, T=10):
         # ==========================
 
         delta = np.reshape((vote == labels), (Npts,1))
-        err = np.sum(wCur * (1 - delta)) + 1e-20
+        err = np.sum(wCur * (1 - delta)) + 1e-22
         alpha = 1/2 * (np.log(1-err) - np.log(err))
         alphaSign = (delta-.5)/(-.5)
         wCur = wCur * (np.exp(alphaSign*alpha))
@@ -265,6 +265,24 @@ def classifyBoost(X, classifiers, alphas, Nclasses):
         # here we can do it by filling in the votes vector with weighted votes
         # ==========================
         
+        for c in range(Ncomps):
+            h = classifiers[c].classify(X)
+            for i in range(Npts):
+                votes[i][h[i]] += alphas[c]
+        
+        #vote = classifiers[-1].classify(X)
+        #vote = classifiers[-1].classify(X)
+        #print(np.tile(range(Nclasses),(Nclasses,1)))
+        #print("     ")
+        #print(np.tile(classifiers[c].classify(X),(Nclasses,1)))
+        #print(np.tile(classifiers[c].classify(X), (Nclasses,1))[:,np.tile(range(Nclasses), (Nclasses,1))])
+
+
+        #print(  np.reshape((np.tile(classifiers[c].classify(X), (Nclasses,1))  == np.tile(range(Nclasses),(Nclasses,Ncomps) )  , (Npts,5))     )
+        #print("----------------------------------------------")
+        #print(np.reshape((classifiers[c].classify(X)  == range(5)), (Npts,5)))
+            #print(np.sum(alphas* classifiers[c].classify(X)))
+        #np.amax(sum(alphas* classifiers.classfy(X)) 
         # ==========================
 
         # one way to compute yPred after accumulating the votes
@@ -296,8 +314,7 @@ class BoostClassifier(object):
 # 
 # Call the `testClassifier` and `plotBoundary` functions for this part.
 
-
-#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='iris',split=0.7)
+#testClassifier(BoostClassifier(BayesClassifier(), T=10), dataset='vowel',split=0.7)
 
 
 
@@ -305,7 +322,7 @@ class BoostClassifier(object):
 
 
 
-#plotBoundary(BoostClassifier(BayesClassifier()), dataset='iris',split=0.7)
+plotBoundary(BoostClassifier(BayesClassifier(), T=10), dataset='vowel',split=0.7)
 
 
 # Now repeat the steps with a decision tree classifier.
